@@ -1,22 +1,8 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import styled from 'styled-components'
-import firebase from 'firebase/app'
-import 'firebase/auth'
 import { Button } from '@material-ui/core'
+import firebase from 'services/firebase'
 import { ReactComponent as Logo } from './logo.svg'
-
-const firebaseConfig = {
-  apiKey: 'AIzaSyAPOdSWubmp9q7OxceTwoWdFoNGQRxKJ2g',
-  authDomain: 'deliveryapp-4db44.firebaseapp.com',
-  databaseURL: 'https://deliveryapp-4db44.firebaseio.com',
-  projectId: 'deliveryapp-4db44',
-  storageBucket: 'deliveryapp-4db44.appspot.com',
-  messagingSenderId: '746638879646',
-  appId: '1:746638879646:web:6700eda06f57e341cb048f',
-  measurementId: 'G-NYP8VYZF1L'
-}
-
-firebase.initializeApp(firebaseConfig)
 
 const Container = styled.main`
   display: flex;
@@ -35,22 +21,52 @@ const LoginButton = styled(Button)`
 `
 
 const Login = () => {
+  const [isUserLogged, setUserLogged] = useState(false)
+  const [userData, setUserData] = useState(null)
+
   useEffect(() => {
     firebase.auth().onAuthStateChanged((user) => {
-      if (user) console.log(user)
+      if (user) {
+        setUserLogged(true)
+        setUserData(user)
+      } else {
+        setUserLogged(false)
+        setUserData(null)
+      }
     })
   }, [])
+
+  const login = useCallback(() => {
+    const provider = new firebase.auth.GithubAuthProvider()
+    firebase.auth().signInWithRedirect(provider)
+  }, [])
+
+  const logout = useCallback(() => {
+    firebase.auth().signOut().then(() => {
+      setUserLogged(false)
+      setUserData(null)
+    })
+  }, [])
+
   return (
     <Container>
       <Title>
         Delivery App
       </Title>
       <Logo />
-      <LoginButton onClick={() => {
-        const provider = new firebase.auth.GithubAuthProvider()
-        firebase.auth().signInWithRedirect(provider)
-      }}
-      >Entrar com github</LoginButton>
+      {isUserLogged && userData && (
+        <>
+          Você está logado como: {userData.displayName}
+          <Button onClick={logout}>
+            Sair
+          </Button>
+        </>
+      )}
+      {!isUserLogged && (
+        <LoginButton onClick={login}>
+          Entrar com github
+        </LoginButton>
+      )}
     </Container>
   )
 }
